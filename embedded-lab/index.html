@@ -23,7 +23,18 @@
   --f-body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
   --r:10px;
+  --rem-bg:#ffffff; --trap-bg:#ffffff; --th-bg:#ffffff; --box-bg:#ffffff;
   color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --panel:#151d1a; --sunk:#1b2521; --fg:#e2ebe6; --muted:#9aaaa2; --line:#2a3732;
+  --accent:#4cc596; --accent-ink:#06130e; --accent-soft:#173a2d;
+  --copper:#e39a5c; --copper-soft:#33241a; --warn:#f08a5d; --warn-soft:#35201a;
+  --code-bg:#0a100e; --code-fg:#dce8e2; --code-line:#1f2b26; --code-muted:#7f948a;
+  --tk-com:#7f948a; --tk-str:#e7b56f; --tk-kw:#7fd3ae; --tk-fn:#8cc3ff; --tk-num:#f29a86; --tk-pp:#d6a5ff;
+  --w-gnd:#a4b0aa; --w-pwr:#ff7b6b; --w-s1:#6cb5f2; --w-s2:#4fd29c; --w-s3:#f0b44f; --w-s4:#c49af1;
+  --rem-bg:#33241a; --trap-bg:#35201a; --th-bg:#1b2521; --box-bg:#1b2521;
+  color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -43,10 +54,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .brand h1{margin:0;font:750 1.25rem/1.1 var(--f-display);letter-spacing:-.01em}
 .brand p{margin:2px 0 0;color:var(--muted);font-size:.85rem}
 .brand{min-width:0}
+.theme{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:600;font-size:.92rem;cursor:pointer}
+.theme:hover{background:var(--sunk)}
+.theme + .dl{margin-left:0}
 .dl{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-weight:600;font-size:.92rem;text-decoration:none}
 .dl:hover{filter:brightness(1.08)}
 .dl svg{flex:none}
-@media (max-width:560px){.dl .long{display:none}.dl{padding:9px 11px}}
+@media (max-width:560px){.dl .long{display:none}.dl{padding:9px 11px}.theme .lbl{display:none}.theme{padding:9px 10px}}
 
 .shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;padding-block:24px 64px}
 .rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start}
@@ -89,7 +103,7 @@ main{min-width:0}
 
 .diagram{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto;padding:14px}
 .diagram svg{display:block;width:100%;min-width:420px;height:auto}
-.dg-box{fill:var(--panel);stroke:var(--line)}
+.dg-box{fill:var(--box-bg);stroke:var(--line)}
 .dg-head{fill:var(--fg);font:700 13px var(--f-body)}
 .dg-pin{fill:var(--fg);font:600 12.5px var(--f-mono)}
 .dg-sig{font:600 12px var(--f-body);paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round}
@@ -102,7 +116,7 @@ main{min-width:0}
 table{border-collapse:collapse;width:100%;font-size:.94rem}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
-th{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--panel)}
+th{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--th-bg)}
 td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 .truth td,.truth th{text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .truth th:first-child,.truth td:first-child{text-align:left}
@@ -126,8 +140,8 @@ td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 
 .callout{border-radius:var(--r);padding:12px 14px;max-width:78ch}
 .callout b.lbl{display:block;font:600 .72rem/1.2 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
-.remember{background:var(--panel);border:1px solid var(--copper)} .remember b.lbl{color:var(--copper)}
-.traps{background:var(--panel);border:1px solid var(--warn)} .traps b.lbl{color:var(--warn)}
+.remember{background:var(--rem-bg);border:1px solid var(--copper)} .remember b.lbl{color:var(--copper)}
+.traps{background:var(--trap-bg);border:1px solid var(--warn)} .traps b.lbl{color:var(--warn)}
 .traps ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:5px}
 
 .viva{display:flex;flex-direction:column;gap:8px;max-width:80ch}
@@ -160,9 +174,11 @@ td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 </style>
 </head>
 <body>
+<script>try{if(localStorage.getItem("elb-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(_){}</script>
 <header class="top"><div class="wrap">
   <div class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="10" height="10" rx="1.5" stroke="var(--accent-ink)" stroke-width="1.6"/><path d="M8 5V1.5M12 5V1.5M8 18.5V15M12 18.5V15M5 8H1.5M5 12H1.5M18.5 8H15M18.5 12H15" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round"/></svg></div>
   <div class="brand"><h1>Embedded Lab Bench</h1><p>IIT Patna EE lab · 8 experiments · connections, setup, code and viva</p></div>
+  <button class="theme" id="theme" type="button" aria-label="Switch colour theme"></button>
   <a class="dl" href="index.html" download="Embedded-Lab-Bench.html" title="Save this page to use without internet"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0L4.5 6.5M8 10l3.5-3.5M2.5 13.5h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download<span class="long"> for offline</span></span></a>
 </div></header>
 
@@ -346,6 +362,21 @@ document.addEventListener("keydown", ev => {
 });
 window.addEventListener("hashchange", () => { fromHash(); render(); });
 
+function paintTheme(){
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  const b = document.getElementById("theme");
+  b.innerHTML = dark
+    ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="lbl">Light</span>'
+    : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="lbl">Dark</span>';
+  b.setAttribute("aria-pressed", dark ? "true" : "false");
+}
+document.getElementById("theme").addEventListener("click", () => {
+  const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+  if (dark) document.documentElement.setAttribute("data-theme","dark"); else document.documentElement.setAttribute("data-theme","light");
+  try { localStorage.setItem("elb-theme", dark ? "dark" : "light"); } catch(_) {}
+  paintTheme();
+});
+paintTheme();
 renderPicker(); fromHash(); go();
 if (scrollTo) { const el = document.getElementById("sec-" + scrollTo); if (el) el.scrollIntoView({block:"start"}); scrollTo = null; }
 })();

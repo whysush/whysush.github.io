@@ -13,32 +13,18 @@
 /* Layout: lab-bench reference — experiment rail on the left, one experiment at a time on the right,
    four tabs (Connections · Setup · Code · Viva). Solder-mask green accent, copper for "remember". */
 :root{
-  --bg:#f2f4f1; --panel:#ffffff; --sunk:#e8ece7; --fg:#15201a; --muted:#56635c; --line:#d2d9d3;
+  --bg:#ffffff; --panel:#ffffff; --sunk:#f2f5f3; --fg:#15201a; --muted:#56635c; --line:#d2d9d3;
   --accent:#0b6a4d; --accent-ink:#ffffff; --accent-soft:#dbeee4;
   --copper:#9c5418; --copper-soft:#f6e7d8; --warn:#a3401a; --warn-soft:#fbe9df;
-  --code-bg:#0f1916; --code-fg:#dce8e2; --code-line:#24332d; --code-muted:#7f948a;
-  --tk-com:#7f948a; --tk-str:#e7b56f; --tk-kw:#7fd3ae; --tk-fn:#8cc3ff; --tk-num:#f29a86; --tk-pp:#d6a5ff;
+  --code-bg:#ffffff; --code-fg:#17211c; --code-line:#dfe5e1; --code-muted:#6a7a72;
+  --tk-com:#7b8b83; --tk-str:#9a5410; --tk-kw:#0b6a4d; --tk-fn:#1b5ea6; --tk-num:#b2392b; --tk-pp:#7a3caf;
   --w-gnd:#39433e; --w-pwr:#c2372a; --w-s1:#1d6db0; --w-s2:#0b8a5a; --w-s3:#b06e06; --w-s4:#7a3caf;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
   --r:10px;
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0e1412; --panel:#151d1a; --sunk:#1b2521; --fg:#e2ebe6; --muted:#9aaaa2; --line:#2a3732;
-  --accent:#4cc596; --accent-ink:#06130e; --accent-soft:#173a2d;
-  --copper:#e39a5c; --copper-soft:#33241a; --warn:#f08a5d; --warn-soft:#35201a;
-  --code-bg:#0a100e; --code-line:#1f2b26;
-  --w-gnd:#a4b0aa; --w-pwr:#ff7b6b; --w-s1:#6cb5f2; --w-s2:#4fd29c; --w-s3:#f0b44f; --w-s4:#c49af1;
-  color-scheme:dark; } }
-:root[data-theme="dark"]{
-  --bg:#0e1412; --panel:#151d1a; --sunk:#1b2521; --fg:#e2ebe6; --muted:#9aaaa2; --line:#2a3732;
-  --accent:#4cc596; --accent-ink:#06130e; --accent-soft:#173a2d;
-  --copper:#e39a5c; --copper-soft:#33241a; --warn:#f08a5d; --warn-soft:#35201a;
-  --code-bg:#0a100e; --code-line:#1f2b26;
-  --w-gnd:#a4b0aa; --w-pwr:#ff7b6b; --w-s1:#6cb5f2; --w-s2:#4fd29c; --w-s3:#f0b44f; --w-s4:#c49af1;
-  color-scheme:dark; }
-
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.55 var(--f-body)}
@@ -103,7 +89,7 @@ main{min-width:0}
 
 .diagram{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto;padding:14px}
 .diagram svg{display:block;width:100%;min-width:420px;height:auto}
-.dg-box{fill:var(--sunk);stroke:var(--line)}
+.dg-box{fill:var(--panel);stroke:var(--line)}
 .dg-head{fill:var(--fg);font:700 13px var(--f-body)}
 .dg-pin{fill:var(--fg);font:600 12.5px var(--f-mono)}
 .dg-sig{font:600 12px var(--f-body);paint-order:stroke;stroke:var(--panel);stroke-width:5px;stroke-linejoin:round}
@@ -116,7 +102,7 @@ main{min-width:0}
 table{border-collapse:collapse;width:100%;font-size:.94rem}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
-th{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--sunk)}
+th{font:600 .74rem/1.2 var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:var(--panel)}
 td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 .truth td,.truth th{text-align:center;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .truth th:first-child,.truth td:first-child{text-align:left}
@@ -140,8 +126,8 @@ td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 
 .callout{border-radius:var(--r);padding:12px 14px;max-width:78ch}
 .callout b.lbl{display:block;font:600 .72rem/1.2 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
-.remember{background:var(--copper-soft)} .remember b.lbl{color:var(--copper)}
-.traps{background:var(--warn-soft)} .traps b.lbl{color:var(--warn)}
+.remember{background:var(--panel);border:1px solid var(--copper)} .remember b.lbl{color:var(--copper)}
+.traps{background:var(--panel);border:1px solid var(--warn)} .traps b.lbl{color:var(--warn)}
 .traps ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:5px}
 
 .viva{display:flex;flex-direction:column;gap:8px;max-width:80ch}

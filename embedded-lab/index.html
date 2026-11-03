@@ -13,11 +13,11 @@
 /* Layout: lab-bench reference — experiment rail on the left, one experiment at a time on the right,
    four tabs (Connections · Setup · Code · Viva). Solder-mask green accent, copper for "remember". */
 :root{
-  --bg:#ffffff; --panel:#ffffff; --sunk:#f2f5f3; --fg:#15201a; --muted:#56635c; --line:#d2d9d3;
-  --accent:#0b6a4d; --accent-ink:#ffffff; --accent-soft:#dbeee4;
+  --bg:#ffffff; --panel:#ffffff; --sunk:#f1f5f6; --fg:#14212a; --muted:#536570; --line:#d3dde0;
+  --accent:#00878F; --accent-ink:#ffffff; --accent-soft:#dcf0f1; --accent-text:#00757c;
   --copper:#9c5418; --copper-soft:#f6e7d8; --warn:#a3401a; --warn-soft:#fbe9df;
-  --code-bg:#ffffff; --code-fg:#17211c; --code-line:#dfe5e1; --code-muted:#6a7a72;
-  --tk-com:#7b8b83; --tk-str:#9a5410; --tk-kw:#0b6a4d; --tk-fn:#1b5ea6; --tk-num:#b2392b; --tk-pp:#7a3caf;
+  --code-bg:#ffffff; --code-fg:#14212a; --code-line:#dde5e8; --code-muted:#64767f;
+  --tk-com:#7a8a93; --tk-str:#9a5410; --tk-kw:#00757c; --tk-fn:#1b5ea6; --tk-num:#b2392b; --tk-pp:#7a3caf;
   --w-gnd:#39433e; --w-pwr:#c2372a; --w-s1:#1d6db0; --w-s2:#0b8a5a; --w-s3:#b06e06; --w-s4:#7a3caf;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -27,13 +27,13 @@
   color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#0e1412; --panel:#151d1a; --sunk:#1b2521; --fg:#e2ebe6; --muted:#9aaaa2; --line:#2a3732;
-  --accent:#4cc596; --accent-ink:#06130e; --accent-soft:#173a2d;
+  --bg:#0b1622; --panel:#101e2c; --sunk:#16283a; --fg:#e2ebf2; --muted:#9aaebd; --line:#22374b;
+  --accent:#3fb8cc; --accent-ink:#06121c; --accent-soft:#123349; --accent-text:#5cc7d8;
   --copper:#e39a5c; --copper-soft:#33241a; --warn:#f08a5d; --warn-soft:#35201a;
-  --code-bg:#0a100e; --code-fg:#dce8e2; --code-line:#1f2b26; --code-muted:#7f948a;
-  --tk-com:#7f948a; --tk-str:#e7b56f; --tk-kw:#7fd3ae; --tk-fn:#8cc3ff; --tk-num:#f29a86; --tk-pp:#d6a5ff;
-  --w-gnd:#a4b0aa; --w-pwr:#ff7b6b; --w-s1:#6cb5f2; --w-s2:#4fd29c; --w-s3:#f0b44f; --w-s4:#c49af1;
-  --rem-bg:#33241a; --trap-bg:#35201a; --th-bg:#1b2521; --box-bg:#1b2521;
+  --code-bg:#08111b; --code-fg:#dce7f0; --code-line:#1b2d3f; --code-muted:#7d93a6;
+  --tk-com:#7d93a6; --tk-str:#e7b56f; --tk-kw:#6fd0de; --tk-fn:#8cc3ff; --tk-num:#f29a86; --tk-pp:#d6a5ff;
+  --w-gnd:#a7b5c2; --w-pwr:#ff7b6b; --w-s1:#6cb5f2; --w-s2:#4fd29c; --w-s3:#f0b44f; --w-s4:#c49af1;
+  --rem-bg:#2e2419; --trap-bg:#33201c; --th-bg:#16283a; --box-bg:#16283a;
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -76,7 +76,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rail .ref{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
 
 main{min-width:0}
-.kicker{font:600 .75rem/1.2 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.kicker{font:600 .75rem/1.2 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--accent-text);margin:0 0 6px}
 .exp-title{margin:0;font:750 clamp(1.7rem,3.6vw,2.4rem)/1.08 var(--f-display);letter-spacing:-.02em;text-wrap:balance}
 .lede{margin:10px 0 0;max-width:62ch;color:var(--muted);font-size:1.05rem}
 .eq{display:inline-block;margin-top:14px;font:600 .92rem/1.4 var(--f-mono);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;max-width:100%;overflow-x:auto;white-space:pre}
@@ -124,7 +124,7 @@ td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 .steps{list-style:none;margin:0;padding:0;counter-reset:s;display:flex;flex-direction:column;gap:2px;max-width:78ch}
 .steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
 .steps li:last-child{border-bottom:0}
-.steps li::before{content:counter(s);font:600 .82rem/1 var(--f-mono);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-top:1px}
+.steps li::before{content:counter(s);font:600 .82rem/1 var(--f-mono);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-text);margin-top:1px}
 
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;justify-content:space-between}
 .toolbar .seg{margin-top:0}
@@ -148,7 +148,7 @@ td.mono{font-family:var(--f-mono);font-size:.88rem;white-space:nowrap}
 .viva details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
 .viva summary{cursor:pointer;list-style:none;padding:12px 14px;display:grid;grid-template-columns:38px 1fr 18px;gap:8px;align-items:baseline;font-weight:600}
 .viva summary::-webkit-details-marker{display:none}
-.viva summary .qn{font:600 .8rem/1 var(--f-mono);color:var(--accent)}
+.viva summary .qn{font:600 .8rem/1 var(--f-mono);color:var(--accent-text)}
 .viva summary::after{content:"+";font:600 1.1rem/1 var(--f-mono);color:var(--muted);text-align:right}
 .viva details[open] summary::after{content:"−"}
 .viva .ans{padding:0 14px 13px 60px;color:var(--fg)}

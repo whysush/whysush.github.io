@@ -69,7 +69,7 @@ const FRICTION_EXP = 1.25;                // exponential velocity decay per seco
 const FRICTION_LIN = 55;                  // constant deceleration in units/s^2, so heads come to a full stop
 const WALL_REST = 0.5;                    // bounciness of the table rails
 const BALL_REST = 0.45;                   // bounciness between heads
-const MIN_SHOT = 420, MAX_SHOT = 1500;    // launch speed range in units/s
+const SHOT_SPEED = 950;                  // every shot goes straight forward at this speed (units/s)
 
 /* ---------------- seeded randomness for the sketchy lines ---------------- */
 function rng(seed) {
@@ -549,8 +549,10 @@ cv.addEventListener('pointerdown', e => {
     }
     hammerMode = false; return;
   }
-  if (y > P(0, LINE_Y)[1] - 30) {
-    drag = { id: e.pointerId, samples: [{ t: performance.now(), x, y }] };
+  // Press anywhere on the table: the held head jumps to that x and follows your finger
+  // sideways. Letting go shoots it straight forward. No aiming or swipe needed.
+  if (y > TOP_Y - 20 && y < VH - 60) {
+    drag = { id: e.pointerId };
     try { cv.setPointerCapture(e.pointerId); } catch (_) {}
     moveHeldTo(x);
   }
@@ -558,28 +560,15 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   const [x, y] = toLogical(e); pointer = [x, y];
   if (!drag || e.pointerId !== drag.id) return;
-  const now = performance.now();
-  drag.samples.push({ t: now, x, y });
-  while (drag.samples.length > 2 && now - drag.samples[0].t > 140) drag.samples.shift();
   moveHeldTo(x);
 });
 function endDrag(e) {
   if (!drag || e.pointerId !== drag.id) return;
-  const [x, y] = toLogical(e), now = performance.now();
-  drag.samples.push({ t: now, x, y });
-  const recent = drag.samples.filter(s => now - s.t <= 110);
-  const a = recent[0], b = recent[recent.length - 1];
+  const [x] = toLogical(e);
   drag = null;
-  if (!held || state !== 'aim' || !a || b.t - a.t < 8) return;
-  const dt = (b.t - a.t) / 1000;
-  // convert the swipe into table units: horizontal by the width scale at the spawn row, vertical by Y_SCALE
-  let vx = (b.x - a.x) / sAt(SPAWN_Y) / dt, vy = (b.y - a.y) / Y_SCALE / dt;
-  if (vy > -180) return;                       // not an upward flick: keep holding (this was a sideways drag to position)
-  let sp = Math.hypot(vx, vy) * 1.05;
-  sp = Math.min(MAX_SHOT, Math.max(MIN_SHOT, sp));
-  if (Math.abs(vx) > .55 * -vy) vx = Math.sign(vx) * .55 * -vy;   // keep shots inside a sensible cone
-  const n = Math.hypot(vx, vy);
-  launch(vx / n * sp, vy / n * sp);
+  if (!held || state !== 'aim') return;
+  moveHeldTo(x);
+  launch(0, -SHOT_SPEED);                      // straight up the table, fixed speed
 }
 cv.addEventListener('pointerup', endDrag);
 cv.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.id) drag = null; });
@@ -590,7 +579,7 @@ addEventListener('keydown', e => {
   if (state !== 'aim' || !held) return;
   if (e.key === 'ArrowLeft') held.x = Math.max(held.r, held.x - 14);
   if (e.key === 'ArrowRight') held.x = Math.min(TW - held.r, held.x + 14);
-  if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); launch(0, -(e.shiftKey ? 1300 : 860)); }
+  if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); launch(0, -SHOT_SPEED); }
 });
 
 /* ---------------- drawing: pieces, effects, UI ---------------- */
@@ -643,8 +632,8 @@ function drawAimGuide(R) {
     jl(ctx, R, p[0], y0 + 40, p[0], y0, 1, 1); jl(ctx, R, p[0] - 10, y0 + 10, p[0], y0, 1, 1); jl(ctx, R, p[0] + 10, y0 + 10, p[0], y0, 1, 1);
     ctx.globalAlpha = 1;
     ctx.font = '22px "Patrick Hand"'; ctx.textAlign = 'center';
-    ctx.lineWidth = 6; ctx.strokeStyle = '#e3d1aa'; ctx.strokeText('swipe up to slide', CX, P(0, TL)[1] + 21);
-    ctx.fillStyle = INK; ctx.fillText('swipe up to slide', CX, P(0, TL)[1] + 21);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#e3d1aa'; ctx.strokeText('tap where you want it to go', CX, P(0, TL)[1] + 21);
+    ctx.fillStyle = INK; ctx.fillText('tap where you want it to go', CX, P(0, TL)[1] + 21);
   }
 }
 function drawFx(R, dt) {
@@ -767,7 +756,7 @@ function drawTitle(R) {
     ctx.font = '15px "Alfa Slab One"'; ctx.fillStyle = INK; ctx.fillText(`${i + 1} · ${TIERS[i].name}`, cx, cy + 62);
   }
   ctx.font = '21px "Patrick Hand"';
-  ctx.fillText('swipe a head up the table. two of the same merge.', 270, 776);
+  ctx.fillText('tap a spot to slide a head up the table. same heads merge.', 270, 776);
   ctx.fillText('anyone left behind the red line ends the run.', 270, 800);
   ctx.fillStyle = RED; ctx.fillText('merge two ASCENDED to win.', 270, 826);
   bigButton(R, 270, 884, 220, 'PLAY', () => newGame());

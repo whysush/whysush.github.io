@@ -761,6 +761,7 @@ function drawTitle(R) {
   ctx.fillStyle = RED; ctx.fillText('merge two ASCENDED to win.', 270, 826);
   bigButton(R, 270, 884, 220, 'PLAY', () => newGame());
   if (best) { ctx.fillStyle = INK; ctx.font = '19px "Patrick Hand"'; ctx.fillText(`best ${best}`, 270, 942); }
+  ctx.fillStyle = '#8a7f6c'; ctx.font = '16px "Patrick Hand"'; ctx.textAlign = 'left'; ctx.fillText('v2 · tap to shoot', 14, 950);
 }
 function drawOver(R) {
   veil();

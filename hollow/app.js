@@ -248,7 +248,8 @@ async function bestRewrite(kind, prompt, src) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Split a rewrite into sentences on . ? followed by a space (rewrites are lowercase, so the generic splitter,
 // which needs an uppercase letter next, would not split them).
-const splitLower = (t) => t.match(/[^.?]+(?:[.?]+|$)/g).map((s) => s.trim()).filter(Boolean);
+// A "." or "?" only ends a sentence when whitespace or the end follows, so decimals ("1.2 billion") stay whole.
+const splitLower = (t) => t.match(/(?:[^.?]|[.?](?=\S))+(?:[.?]+|$)/g).map((s) => s.trim()).filter(Boolean);
 
 async function reveal(segments) {
   answerEl.textContent = "";

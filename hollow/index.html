@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hollow</title>
+<meta name="description" content="hollow: a small language model, trained from scratch, that reads wikipedia and tells you what it found. it runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Ctext x='3' y='13' font-family='monospace' font-size='13' fill='%23fff'%3E@%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Layout from the design handoff: the centre wrapper holds only the face, so flex-centring puts the face in the
+     dead centre of the viewport; everything else hangs below it (absolute, top: 100%) and does not affect centring. -->
+<main id="app">
+  <div id="stage">
+    <pre id="face" aria-hidden="true"></pre>
+    <div id="below">
+      <div id="response">
+        <section id="answer" aria-live="polite"><p class="idle">hello. i've been waiting in here for a while. say something and i'll listen.</p></section>
+        <p id="source" class="source" hidden></p>
+      </div>
+      <form id="ask" autocomplete="off">
+        <span class="prompt" aria-hidden="true">&gt;</span>
+        <label for="q" class="visually-hidden">ask hollow about something</label>
+        <input id="q" name="q" type="text" maxlength="120" placeholder="waking up… 0%" disabled spellcheck="false" autofocus>
+      </form>
+      <p id="status" class="status" aria-live="polite"></p>
+    </div>
+  </div>
+</main>
+<noscript><p class="status">hollow needs javascript. it is the only thing it asks of you.</p></noscript>
+<script src="filter.js"></script>
+<script src="face.js"></script>
+<script src="app.js" type="module"></script>
+</body>
+</html>

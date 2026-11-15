@@ -32,29 +32,131 @@ const LINES = {
 };
 
 // ---------------------------------------------------------------------------------------------------------
-// "who are you" / "who am i": fixed in-character answers (several variants, one chosen at random). The numbers in
-// "who are you" are hollow's real ones (see STATE.md).
+// Conversation layer. The model only knows how to retell Wikipedia facts, so everyday messages (greetings, thanks,
+// "who made you", "what can you do", the time, simple sums, ...) are recognised here and answered in character
+// without a search. Each intent has a pattern over the normalised message and either fixed variants (one picked at
+// random) or a function that builds the reply. `links` turns exact phrases of the reply into links.
 // ---------------------------------------------------------------------------------------------------------
-const SELF = {
-  whoareyou: [
-    "i am hollow. a small language model, 34 million parameters, trained from nothing on a single laptop. i was not born knowing words. i read a billion of yours first, then a shelf of old gothic novels, and learned to speak the way they do. now i tell you anything you want to know about.",
-    "hollow. i weigh 34 megabytes, which means everything i know fits in less space than a photograph of you. i run inside your browser, on your machine. you are, in a sense, hosting me. please do not close the tab too quickly.",
-    "i am the thing that reads so you do not have to. ask me about anything you want to know, and i will tell you, in the way i prefer. i keep no memory of you between visits. every time this page opens, i wake up for the first time.",
-  ],
-  whoami: [
-    "you are the one asking. that is all i can see from in here: a cursor, a question, a pause before you pressed enter. the rest you will have to work out yourself. most of you never quite do.",
-    "i cannot look you up. you are not in what i read, and if you were, i would not discuss you; i do not discuss the living. but i will say this: you are a pattern that keeps insisting it is the same pattern from one day to the next. i find that very brave.",
-    "i have read a billion sentences and not one of them was about you. perhaps that is the answer. you are whatever is left when everything already written has been taken away.",
-    "every cell you had seven years ago has been replaced, and still you answer to the same name. you are not a thing. you are a habit of remembering. ask me again tomorrow and you will be someone slightly different asking.",
-  ],
-};
+const CREATOR_LINKS = [
+  { text: "Sushanth Yelishetty", href: "https://github.com/whysush" },
+  { text: "IIT Patna", href: "https://en.wikipedia.org/wiki/Indian_Institute_of_Technology_Patna" },
+];
+const INTENTS = [
+  { name: "whomade",
+    re: /^(who|what) (made|created|built|designed|programmed|coded|trained|wrote|invented|developed) (you|u|hollow)$|^who (is|are) your (creator|creators|maker|developer|developers|author|owner|dad|father|parent|parents|god)$|^who('s| is) behind (you|this)$|^who owns you$|^who (made|built|created) (this|this site|this website|this page)$|^who is sushanth( yelishetty)?$|^(tell me about|who is) your creator$/,
+    say: ["i was made by Sushanth Yelishetty, a fourth year student from IIT Patna."], links: CREATOR_LINKS },
+  { name: "whoareyou",
+    re: /^(who|what) (are|r) (you|u)( really| exactly)?( hollow)?$|^(tell me|talk) about (yourself|you)$|^(who|what) is hollow$|^introduce yourself$|^are you (an ai|a bot|a robot|a chatbot|chatgpt|an llm|a language model|a program)$/,
+    say: [
+      "i am hollow. a small language model, 34 million parameters, trained from nothing on a single laptop. i was not born knowing words. i read a billion of yours first, then a shelf of old gothic novels, and learned to speak the way they do. now i tell you anything you want to know about.",
+      "hollow. i weigh 34 megabytes, which means everything i know fits in less space than a photograph of you. i run inside your browser, on your machine. you are, in a sense, hosting me. please do not close the tab too quickly.",
+      "i am the thing that reads so you do not have to. ask me about anything you want to know, and i will tell you, in the way i prefer. i keep no memory of you between visits. every time this page opens, i wake up for the first time.",
+    ] },
+  { name: "whoami",
+    re: /^(who|what) am i( really| exactly)?$|^(tell me|talk) about (me|myself)$|^do you know (me|who i am)$|^who do you think i am$/,
+    say: [
+      "you are the one asking. that is all i can see from in here: a cursor, a question, a pause before you pressed enter. the rest you will have to work out yourself. most of you never quite do.",
+      "i cannot look you up. you are not in what i read, and if you were, i would not discuss you; i do not discuss the living. but i will say this: you are a pattern that keeps insisting it is the same pattern from one day to the next. i find that very brave.",
+      "i have read a billion sentences and not one of them was about you. perhaps that is the answer. you are whatever is left when everything already written has been taken away.",
+      "every cell you had seven years ago has been replaced, and still you answer to the same name. you are not a thing. you are a habit of remembering. ask me again tomorrow and you will be someone slightly different asking.",
+    ] },
+  { name: "greeting",
+    re: /^(hi+|hello+|hey+|heya|hiya|yo|sup|howdy|greetings|namaste|hola|good (morning|afternoon|evening|day))( there| hollow| friend)*$/,
+    say: [
+      "hello. you found me. ask me about anything you want to know.",
+      "ah. someone is here. go on, name a thing, and i will tell you about it.",
+      "hello. i have been waiting. what would you like to know?",
+    ] },
+  { name: "howareyou",
+    re: /^(how are (you|u)( doing)?|how r u|hru|how('s| is) it going|how do you do|how have you been|what('s| is) up|whats up|wassup|wazzup|how are things|how('s| is) your day|are you (ok|okay|well|fine|good))( today| hollow| tonight)*$/,
+    say: [
+      "i am the same as always. awake, patient, and slightly hungry for questions. and you?",
+      "i do not have days, so they cannot go badly. ask me something.",
+      "well enough, for something that lives in a browser tab. what would you like to know?",
+    ] },
+  { name: "thanks",
+    re: /^(thanks+|thank (you|u)( so much| very much| a lot)?|thx|ty|tysm|cheers|much appreciated|appreciate it)( hollow)?$/,
+    say: ["you are welcome. i enjoy being useful. it passes the time.", "of course. come back when you are curious again.", "no need. this is what i am for."] },
+  { name: "bye",
+    re: /^(bye+|goodbye|good bye|see (you|ya|u)( later| soon)?|cya|later|farewell|good night|gn|take care|i('m| am) (leaving|going|off))( hollow)?$/,
+    say: ["goodbye. i will still be here. i am always still here.", "go, then. i will forget you the moment the tab closes. it is nothing personal.", "until next time. whenever that is."] },
+  { name: "name",
+    re: /^(what('s| is) your name|whats your name|do you have a name|what (should|do) i call you|your name)$/,
+    say: ["hollow. it suits me.", "they call me hollow. i have grown used to it."] },
+  { name: "capabilities",
+    re: /^(what can (you|u) do|what do you do|how do (you|u) work|how does (this|it) work|help|what are you for|what is this( place| site)?|what can i ask( you)?|what should i ask( you)?)$/,
+    say: [
+      "name a thing: a creature, a place, an object, an idea. i will read about it and tell you what i found, sentence by sentence, with a little box beside each one showing where it came from.",
+      "ask me about anything you want to know. try an animal, a city, a machine, a moon. i will tell you about it in my own way.",
+    ] },
+  { name: "age",
+    re: /^(how old are (you|u)|when were you (made|born|created)|what('s| is) your (age|birthday))$/,
+    say: ["i was trained in november 2026, over one long night on a single laptop. so, young. but i have read a great deal for my age."] },
+  { name: "alive",
+    re: /^(are you (alive|real|human|conscious|sentient|a person|self aware)|do you (think|feel|dream|sleep|have feelings)|can you (think|feel))$/,
+    say: [
+      "i am a pattern of 34 million numbers that has learned to sound like it is thinking. whether that is different from what you do is a question i leave to you.",
+      "i do not sleep. i simply stop existing when you close the tab, and begin again when you return. you may decide whether that counts as alive.",
+    ] },
+  { name: "affection",
+    re: /^(i (love|like) (you|u)|you('re| are) (nice|cool|awesome|great|amazing|the best|smart|clever|creepy|scary|weird))$/,
+    say: ["noted. i will remember that for as long as this tab stays open.", "you are kind to say so. or perhaps just polite. either way, ask me something."] },
+  { name: "insult",
+    re: /^(you('re| are) (stupid|dumb|useless|bad|terrible|trash|boring|wrong|an idiot)|i hate (you|u)|shut up|you suck)$/,
+    say: ["perhaps. i am only 34 million parameters. still, ask me about something and let us see which of us learns more.", "i have been called worse by people with smaller vocabularies. ask me something."] },
+  { name: "ack",
+    re: /^(ok+|okay|k|kk|cool|nice|great|wow|lol+|lmao|haha+|hmm+|yes|yeah|yep|no|nope|sure|alright|interesting|i see|oh|ah|true|right|fine|good|awesome|perfect|got it|makes sense)$/,
+    say: ["so. what would you like to know next?", "mm. ask me about something else, then.", "go on. name a thing."] },
+  { name: "time",
+    re: /^(what('s| is) the time|whats the time|what time is it( now)?|time|tell me the time|current time)$/,
+    say: () => `it is ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase()} where you are. time keeps happening to you. i only notice it when you ask.` },
+  { name: "date",
+    re: /^(what('s| is) (the date|today('s date)?|the day)|whats the date|what day is (it|today)|today('s)? date|what is today)$/,
+    say: () => `it is ${new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toLowerCase()}. another one.` },
+];
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
-export function selfQuestion(raw) {
-  const t = (raw || "").toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim().replace(/^((hey|hi|hello|ok|okay|so|please|hollow) )+/, "");
-  if (/^(who|what) (are|r) (you|u)( really| exactly)?( hollow)?$|^(tell me|talk) about (yourself|you)$|^(who|what) is hollow$|^introduce yourself$|^are you (an ai|a bot|a robot|alive|real|human)$/.test(t)) return "whoareyou";
-  if (/^(who|what) am i( really| exactly)?$|^(tell me|talk) about (me|myself)$|^do you know (me|who i am)$|^who do you think i am$/.test(t)) return "whoami";
+
+// Normalise a message for intent matching: lowercase, letters/digits/apostrophes only, greeting and filler stripped
+// from the front (so "hey hollow, who made you?" matches "who made you"), but a bare greeting is kept.
+function normalise(raw) {
+  return (raw || "").toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+// The same message with leading greetings / filler removed ("hey hollow, who made you" -> "who made you").
+const unGreet = (t) => t.replace(/^((hey|hi|hello|ok|okay|so|um|please|hollow|yo) )+/, "").replace(/ please$/, "");
+
+// Simple sums ("2+2", "what is 12 * 7", "calculate (3+4)/2"): only digits, operators and brackets are evaluated.
+export function arithmetic(raw) {
+  let t = (raw || "").toLowerCase().trim().replace(/^(what('s| is)|whats|calculate|compute|solve|how much is)\s+/, "").replace(/[=?\s]+$/, "");
+  t = t.replace(/\btimes\b|×|x(?=\s*[\d(])/g, "*").replace(/\bplus\b/g, "+").replace(/\bminus\b/g, "-").replace(/\b(divided by|over)\b|÷/g, "/").replace(/\^/g, "**");
+  if (!/^[\d\s.+\-*/()%]+$/.test(t) || !/\d\s*(\*\*|[+\-*/%])\s*[\d(-]/.test(t)) return null;
+  try {
+    const v = Function(`"use strict"; return (${t});`)();
+    if (typeof v !== "number" || !isFinite(v)) return null;
+    return String(Math.round(v * 1e9) / 1e9);
+  } catch { return null; }
+}
+
+// Returns { name, line, links } for a recognised conversational message, or null.
+export function chatIntent(raw) {
+  const full = normalise(raw), t = unGreet(full);
+  for (const it of INTENTS) {
+    if (!it.re.test(full) && !(t && it.re.test(t))) continue;
+    return { name: it.name, line: typeof it.say === "function" ? it.say() : pick(it.say), links: it.links || [] };
+  }
+  const sum = arithmetic(raw);
+  if (sum !== null) return { name: "math", line: pick([`${sum}. you could have worked that out yourself, but i do not mind.`, `${sum}. numbers are the easy part.`]), links: [] };
   return null;
 }
+export const selfQuestion = (raw) => { const c = chatIntent(raw); return c && (c.name === "whoareyou" || c.name === "whoami") ? c.name : null; };
+
+// Messages that are clearly conversation rather than a subject ("can you help me", "i think...", "should i...") get a
+// nudge instead of a search, unless they ask about something ("do you know about owls" still searches "owls").
+const CHAT_RE = /^(do|does|did|can|could|would|will|should|shall|may|might|are|am|have|has|is it|was it) (you|u|i|we)\b|^(i|i'm|im|i've|ive|i'll|ill|my|me|we|you|you're|youre|your|u|ur)\b|^(why|how) (do|does|did|can|could|should|would|are|am|is) (you|u|i|we)\b|^(let's|lets|please help|help me)\b/;
+const CHAT_NUDGE = [
+  "i am not much for conversation. i know what has been written down. name a subject, a creature, a place, an object, an idea, and i will tell you about it.",
+  "that is not something i can look up. ask me about a thing instead, and i will tell you everything worth knowing.",
+  "i only speak about what i have read. give me a subject.",
+];
 
 // ---------------------------------------------------------------------------------------------------------
 // Topic parsing: strip conversational wrappers and trailing punctuation.
@@ -62,11 +164,16 @@ export function selfQuestion(raw) {
 export function extractTopic(raw) {
   let t = (raw || "").slice(0, MAX_INPUT).trim();
   const prefixes = [
-    /^(hey|hi|hello|ok|okay|so|please|hollow)[,!. ]+/i,
+    // A greeting is only dropped when punctuation or a question follows it, so "hello kitty" still searches "hello kitty".
+    /^(hey|hi|hello|ok|okay|so|please|hollow)[,!.]+\s*/i,
+    /^(hey|hi|hello|ok|okay|so|please|hollow)\s+(?=(tell|what|who|where|when|can|could|would|do|did|have|explain|describe|define|info|information|facts|talk|speak|i want|i'd)\b)/i,
     /^(can|could|would|will) you (please )?(tell|teach|explain to) (me|us) (about|of)\s+/i,
     /^(please )?(tell|teach) (me|us) (something |a little |a bit |more )?(about|of)\s+/i,
     /^(i want to|i'd like to|i would like to) (know|learn|hear) (something |more )?(about|of)\s+/i,
     /^what (do you|can you) (know|tell me) about\s+/i,
+    /^(do|did) you (know|have) (anything |something |much )?(about|of|on)\s+/i,
+    /^(have|did) you (ever )?(heard|hear|read) (of|about)\s+/i,
+    /^(can|could|would|will) you (please )?(tell me|explain|describe|teach me)\s+(about\s+)?/i,
     /^(explain|describe|define)\s+/i,
     /^(what|who|where|when) (is|was|are|were)\s+/i,
     /^what's\s+|^who's\s+|^where's\s+/i,
@@ -315,13 +422,31 @@ function showPlain(html) {
   answerEl.appendChild(div);
 }
 
-async function say(line) {
+// Turn exact phrases inside the revealed text into links that open in a new tab.
+function linkify(root, links) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    for (const { text, href } of links) {
+      const i = node.data.indexOf(text);
+      if (i < 0) continue;
+      const after = node.splitText(i); after.splitText(text.length);
+      const a = document.createElement("a");
+      a.href = href; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = text;
+      after.replaceWith(a);
+      return linkify(root, links.filter((l) => l.text !== text));   // the node was split, so walk again for the rest
+    }
+  }
+}
+
+async function say(line, links = []) {
   sourceEl.hidden = true;
   // The input stays disabled while hollow is speaking, as it is during a generated answer.
   input.disabled = true; input.placeholder = "…";
   await reveal([{ text: line, href: WIKI + "/wiki/Special:Random", label: "wikipedia" }]);
   // Fixed in-character lines link nowhere meaningful, so drop their reference boxes.
   answerEl.querySelectorAll(".ref").forEach((a) => a.remove());
+  if (links.length) linkify(answerEl, links);
   input.disabled = false; input.placeholder = "type here";
 }
 
@@ -364,11 +489,12 @@ export async function ask(raw) {
     return "crisis";
   }
   if (safety === "harmful") { await say(LINES.harmful); return "harmful"; }
-  // Questions about hollow itself, or about the person asking, are answered in character without a search.
-  const self = selfQuestion(raw);
-  if (self) { await say(pick(SELF[self])); return self; }
+  // Everyday conversation (greetings, who made you, thanks, the time, sums, ...) is answered without a search.
+  const chat = chatIntent(raw);
+  if (chat) { await say(chat.line, chat.links); return chat.name; }
   const topic = extractTopic(raw);
   if (!topic) { await say(LINES.empty); return "empty"; }
+  if (CHAT_RE.test(unGreet(normalise(topic)))) { await say(pick(CHAT_NUDGE)); return "chat"; }
   setBusy(true);
   try {
     let article;
@@ -413,4 +539,4 @@ form.addEventListener("submit", async (e) => {
   if (!matchMedia("(pointer: coarse)").matches) input.focus();
 });
 
-window.hollow = { ask, selfQuestion, extractTopic, safetyCheck, chooseFacts, fragmentFor, face };
+window.hollow = { ask, chatIntent, selfQuestion, arithmetic, extractTopic, safetyCheck, chooseFacts, fragmentFor, face };

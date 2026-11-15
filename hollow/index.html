@@ -22,13 +22,16 @@
         <section id="answer" aria-live="polite"><p class="idle">hello. i've been waiting in here for a while. say something and i'll listen.</p></section>
         <p id="source" class="source" hidden></p>
       </div>
-      <form id="ask" autocomplete="off">
-        <span class="prompt" aria-hidden="true">&gt;</span>
-        <label for="q" class="visually-hidden">ask hollow about something</label>
-        <input id="q" name="q" type="text" maxlength="120" placeholder="waking up… 0%" disabled spellcheck="false" autofocus>
-      </form>
       <p id="status" class="status" aria-live="polite"></p>
     </div>
+  </div>
+  <!-- The input sits in a bar fixed to the bottom of the screen; answers scroll above it. -->
+  <div id="dock">
+    <form id="ask" autocomplete="off">
+      <span class="prompt" aria-hidden="true">&gt;</span>
+      <label for="q" class="visually-hidden">ask hollow about something</label>
+      <input id="q" name="q" type="text" maxlength="120" placeholder="waking up… 0%" disabled spellcheck="false" autofocus>
+    </form>
   </div>
 </main>
 <noscript><p class="status">hollow needs javascript. it is the only thing it asks of you.</p></noscript>

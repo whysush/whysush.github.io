@@ -16,7 +16,7 @@ const REVEAL_CPS = 30;          // reveal speed, characters per second (spec: ~3
 // ---------------------------------------------------------------------------------------------------------
 // Face
 // ---------------------------------------------------------------------------------------------------------
-const face = new HollowFace(faceEl, { cols: 90, fps: 12, speed: 1, style: "ascii" });   // design handoff defaults
+const face = new HollowFace(faceEl, { cols: 90, fps: 12, speed: 1, style: "ascii", heightFrac: 0.4, widthFrac: 0.6 });   // handoff defaults; face kept to 40% of the screen height and 60% of the width
 face.start();
 
 // ---------------------------------------------------------------------------------------------------------
@@ -37,9 +37,9 @@ const LINES = {
 // ---------------------------------------------------------------------------------------------------------
 const SELF = {
   whoareyou: [
-    "i am hollow. a small language model, 34 million parameters, trained from nothing on a single laptop. i was not born knowing words. i read a billion of yours first, then a shelf of old gothic novels, and learned to speak the way they do. now i read wikipedia for you and tell you what it says.",
+    "i am hollow. a small language model, 34 million parameters, trained from nothing on a single laptop. i was not born knowing words. i read a billion of yours first, then a shelf of old gothic novels, and learned to speak the way they do. now i tell you anything you want to know about.",
     "hollow. i weigh 34 megabytes, which means everything i know fits in less space than a photograph of you. i run inside your browser, on your machine. you are, in a sense, hosting me. please do not close the tab too quickly.",
-    "i am the thing that reads so you do not have to. ask me about something and i will open wikipedia, choose what matters, and say it the way i prefer. i keep no memory of you between visits. every time this page opens, i wake up for the first time.",
+    "i am the thing that reads so you do not have to. ask me about anything you want to know, and i will tell you, in the way i prefer. i keep no memory of you between visits. every time this page opens, i wake up for the first time.",
   ],
   whoami: [
     "you are the one asking. that is all i can see from in here: a cursor, a question, a pause before you pressed enter. the rest you will have to work out yourself. most of you never quite do.",

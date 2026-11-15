@@ -187,6 +187,8 @@
       this.speed = opts.speed ?? 1;
       this.ramp = RAMPS[opts.style ?? 'ascii'];
       this.reserve = opts.reserve ?? 340;
+      this.heightFrac = opts.heightFrac ?? null;
+      this.widthFrac = opts.widthFrac ?? 0.7;
       this.src = opts.src ?? 'assets/face-ref2.png';
       this.img = null;
       // Resolves once the source image has loaded; nothing is drawn before that (as in the reference).
@@ -219,7 +221,11 @@
     pushChar() { /* the mouth follows the seeded speech timeline while talking; kept for the app's API */ }
     // Font size from the handoff, written to the DOM only when it changes.
     _size() {
-      const fs = Math.max(3, Math.min((innerHeight - this.reserve) / this.rows, innerWidth * 0.92 / (this.cols * 0.6)));
+      // heightFrac / widthFrac (HOLLOW): the face takes at most this share of the viewport height / width. Without them
+      // the handoff rule applies (innerHeight minus a 340 px reserve, or 92% of the width).
+      const fs = this.heightFrac
+        ? Math.max(3, Math.min(innerHeight * this.heightFrac / this.rows, innerWidth * this.widthFrac / (this.cols * 0.6)))
+        : Math.max(3, Math.min((innerHeight - this.reserve) / this.rows, innerWidth * 0.92 / (this.cols * 0.6)));
       if (this._fs !== fs) { this.el.style.fontSize = fs + 'px'; this._fs = fs; }
     }
     draw(t, dt) {

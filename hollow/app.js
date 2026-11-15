@@ -32,6 +32,31 @@ const LINES = {
 };
 
 // ---------------------------------------------------------------------------------------------------------
+// "who are you" / "who am i": fixed in-character answers (several variants, one chosen at random). The numbers in
+// "who are you" are hollow's real ones (see STATE.md).
+// ---------------------------------------------------------------------------------------------------------
+const SELF = {
+  whoareyou: [
+    "i am hollow. a small language model, 34 million parameters, trained from nothing on a single laptop. i was not born knowing words. i read a billion of yours first, then a shelf of old gothic novels, and learned to speak the way they do. now i read wikipedia for you and tell you what it says.",
+    "hollow. i weigh 34 megabytes, which means everything i know fits in less space than a photograph of you. i run inside your browser, on your machine. you are, in a sense, hosting me. please do not close the tab too quickly.",
+    "i am the thing that reads so you do not have to. ask me about something and i will open wikipedia, choose what matters, and say it the way i prefer. i keep no memory of you between visits. every time this page opens, i wake up for the first time.",
+  ],
+  whoami: [
+    "you are the one asking. that is all i can see from in here: a cursor, a question, a pause before you pressed enter. the rest you will have to work out yourself. most of you never quite do.",
+    "i cannot look you up. you are not in what i read, and if you were, i would not discuss you; i do not discuss the living. but i will say this: you are a pattern that keeps insisting it is the same pattern from one day to the next. i find that very brave.",
+    "i have read a billion sentences and not one of them was about you. perhaps that is the answer. you are whatever is left when everything already written has been taken away.",
+    "every cell you had seven years ago has been replaced, and still you answer to the same name. you are not a thing. you are a habit of remembering. ask me again tomorrow and you will be someone slightly different asking.",
+  ],
+};
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+export function selfQuestion(raw) {
+  const t = (raw || "").toLowerCase().replace(/[^a-z' ]+/g, " ").replace(/\s+/g, " ").trim().replace(/^((hey|hi|hello|ok|okay|so|please|hollow) )+/, "");
+  if (/^(who|what) (are|r) (you|u)( really| exactly)?( hollow)?$|^(tell me|talk) about (yourself|you)$|^(who|what) is hollow$|^introduce yourself$|^are you (an ai|a bot|a robot|alive|real|human)$/.test(t)) return "whoareyou";
+  if (/^(who|what) am i( really| exactly)?$|^(tell me|talk) about (me|myself)$|^do you know (me|who i am)$|^who do you think i am$/.test(t)) return "whoami";
+  return null;
+}
+
+// ---------------------------------------------------------------------------------------------------------
 // Topic parsing: strip conversational wrappers and trailing punctuation.
 // ---------------------------------------------------------------------------------------------------------
 export function extractTopic(raw) {
@@ -292,18 +317,37 @@ function showPlain(html) {
 
 async function say(line) {
   sourceEl.hidden = true;
+  // The input stays disabled while hollow is speaking, as it is during a generated answer.
+  input.disabled = true; input.placeholder = "…";
   await reveal([{ text: line, href: WIKI + "/wiki/Special:Random", label: "wikipedia" }]);
   // Fixed in-character lines link nowhere meaningful, so drop their reference boxes.
   answerEl.querySelectorAll(".ref").forEach((a) => a.remove());
+  input.disabled = false; input.placeholder = "type here";
 }
 
 // ---------------------------------------------------------------------------------------------------------
 // Main flow.
 // ---------------------------------------------------------------------------------------------------------
+// While hollow looks things up and generates, the answer area shows "(thinking.)" -> "(thinking..)" ->
+// "(thinking...)" -> back to one dot, one step every 400 ms.
+let thinkTimer = null;
+function startThinking() {
+  stopThinking();
+  let n = 0;
+  const step = () => { answerEl.textContent = `(thinking${".".repeat(n % 3 + 1)})`; n++; };
+  step();
+  thinkTimer = setInterval(step, 400);
+}
+function stopThinking() {
+  if (thinkTimer === null) return;
+  clearInterval(thinkTimer); thinkTimer = null;
+  answerEl.textContent = "";
+}
+
 function setBusy(b) {
   input.disabled = b;
   input.placeholder = b ? "…" : "type here";
-  if (b) face.setMode("thinking"); else face.setMode("idle");
+  if (b) { face.setMode("thinking"); startThinking(); } else { face.setMode("idle"); stopThinking(); }
 }
 
 export async function ask(raw) {
@@ -320,10 +364,12 @@ export async function ask(raw) {
     return "crisis";
   }
   if (safety === "harmful") { await say(LINES.harmful); return "harmful"; }
+  // Questions about hollow itself, or about the person asking, are answered in character without a search.
+  const self = selfQuestion(raw);
+  if (self) { await say(pick(SELF[self])); return self; }
   const topic = extractTopic(raw);
   if (!topic) { await say(LINES.empty); return "empty"; }
   setBusy(true);
-  answerEl.textContent = "";
   try {
     let article;
     try { article = await findArticle(topic); } catch { setBusy(false); await say(LINES.offline); return "offline"; }
@@ -367,4 +413,4 @@ form.addEventListener("submit", async (e) => {
   if (!matchMedia("(pointer: coarse)").matches) input.focus();
 });
 
-window.hollow = { ask, extractTopic, safetyCheck, chooseFacts, fragmentFor, face };
+window.hollow = { ask, selfQuestion, extractTopic, safetyCheck, chooseFacts, fragmentFor, face };

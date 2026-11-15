@@ -1,10 +1,11 @@
-// HOLLOW face: a 1:1 port of the "ASCII Talking Face" design handoff
-// ("Talking Face Animation/design_handoff_ascii_talking_face/README.md" and reference/Talking Face.dc.html).
+// HOLLOW face: a 1:1 port of the "ASCII Talking Face" design handoff, second version
+// ("Talking Face Animation(1)/design_handoff_ascii_talking_face/README.md" and reference/Talking Face.dc.html).
 //
-// An original, procedurally sculpted head (signed-distance shapes, no image assets) is ray-marched once into a
-// luminance grid, then sampled every frame with jaw / lip / brow / eyelid deformations and mapped to ASCII.
-// The arithmetic below is copied expression for expression from the reference so that frames are bit-identical:
-// renderAt(t) reproduces the 28 golden frames in frames/frames.json exactly (see web-tests/face_golden.mjs).
+// A front-on head image (assets/face-ref2.png) is cropped, background-removed and cut at the jaw into a luminance
+// grid once; every frame then samples that grid with jaw / lip / brow / eyelid deformations and maps it to ASCII.
+// The arithmetic is copied expression for expression from the reference so frames are identical: renderAt(t)
+// reproduces the 28 golden frames in frames/frames.json (web-tests/face_golden.mjs runs this in Chromium, because the
+// grid comes from a browser canvas).
 //
 // HOLLOW integration (the only behaviour added on top of the handoff):
 //   mode "talking"           the seeded speech timeline plays (jaw, lip shapes, brows, blinks), exactly as in the
@@ -12,84 +13,44 @@
 //                            timeline where the last one stopped.
 //   mode "idle" / "thinking" mouth closed (open = 0, wide = 0, which is the reference's own closed pose); blinks keep
 //                            coming from the same blink schedule on the real-time clock; head drift continues.
-// Loaded as a classic script (global HollowFace) and also usable from Node via require() for the golden test.
+// Loaded as a classic script (global HollowFace).
 (function (root) {
   "use strict";
-  const A = 1.229;                                  // face height / width
+  const CROP = [112, 4, 166, 204];                  // source rect in assets/face-ref2.png: x, y, w, h (image px)
+  const A = CROP[3] / CROP[2];                      // face height / width (204/166)
   const RAMPS = { ascii: " .,:;$$#%@", dots: " ·.:∙•●" };   // index 0 = darkest; '$' is intentionally doubled
-  // Facial landmark constants (normalised u/v of the rendered head; they line up with the SDF sculpt).
+  // Facial landmark constants (normalised to the crop).
   const MX = 0.506, MY = 0.78, MHW = 0.115, CHIN = 0.95;
   const EYES = [[0.32, 0.505], [0.66, 0.505]], ERX = 0.1, ERY = 0.034, BROWY = 0.45;
   const sm = (a, b, x) => { const q = Math.max(0, Math.min(1, (x - a) / (b - a))); return q * q * (3 - 2 * q); };
 
-  // ---- 1. Procedural head -> luminance grid (ww = cols*3, hh = rows*4 samples), ray-marched once per size ----
-  function buildGrid(W, H) {
-    const ww = W * 3, hh = H * 4, g = new Float32Array(ww * hh);
-    const len = (x, y, z) => Math.sqrt(x * x + y * y + z * z);
-    const ell = (px, py, pz, cx, cy, cz, rx, ry, rz) => {   // ellipsoid SDF approximation k0*(k0-1)/k1
-      const x = (px - cx) / rx, y = (py - cy) / ry, z = (pz - cz) / rz;
-      const k0 = len(x, y, z), k1 = len(x / rx, y / ry, z / rz);
-      return k0 * (k0 - 1) / (k1 || 1e-6);
-    };
-    const sph = (px, py, pz, cx, cy, cz, r) => len(px - cx, py - cy, pz - cz) - r;
-    const cap = (px, py, pz, ax, ay, az, bx, by, bz, r) => {   // capsule from a to b
-      const pax = px - ax, pay = py - ay, paz = pz - az, bax = bx - ax, bay = by - ay, baz = bz - az;
-      const h = Math.max(0, Math.min(1, (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz)));
-      return len(pax - bax * h, pay - bay * h, paz - baz * h) - r;
-    };
-    // Polynomial smooth union; smax with a negated shape is a smooth subtraction.
-    const smin = (a, b, k) => { const h = Math.max(0, Math.min(1, 0.5 + 0.5 * (b - a) / k)); return b * (1 - h) + a * h - k * h * (1 - h); };
-    const smax = (a, b, k) => -smin(-a, -b, k);
-    // The sculpt, combined in the exact order of the handoff table (ax = |x| mirrors left/right).
-    const sdf = (x, y, z) => {
-      const ax = Math.abs(x);
-      let d = ell(x, y, z, 0, 0.13, -0.02, 0.36, 0.44, 0.41);                    // 1 cranium
-      d = smin(d, ell(x, y, z, 0, -0.17, 0.05, 0.29, 0.33, 0.32), 0.08);        // 2 face mass
-      d = smin(d, ell(x, y, z, 0, -0.42, 0.13, 0.12, 0.095, 0.15), 0.1);        // 3 chin
-      d = smin(d, ell(ax, y, z, 0.15, -0.33, 0.1, 0.12, 0.13, 0.2), 0.08);      // 4 jaw
-      d = smin(d, ell(ax, y, z, 0.19, -0.1, 0.2, 0.1, 0.065, 0.12), 0.06);      // 5 cheekbones
-      d = smin(d, ell(x, y, z, 0, 0.08, 0.28, 0.28, 0.05, 0.12), 0.05);         // 6 brow ridge
-      d = smin(d, ell(ax, y, z, 0.36, -0.02, -0.02, 0.035, 0.095, 0.06), 0.03); // 7 ears
-      d = smax(d, -sph(ax, y, z, 0.165, -0.01, 0.37, 0.1), 0.04);               // 8 eye sockets
-      d = smin(d, sph(ax, y, z, 0.165, -0.008, 0.235, 0.068), 0.015);           // 9 eyeballs
-      d = smin(d, ell(ax, y, z, 0.165, 0.028, 0.27, 0.08, 0.02, 0.05), 0.025);  // 10 upper lids
-      d = smin(d, cap(x, y, z, 0, 0.02, 0.37, 0, -0.18, 0.48, 0.032), 0.04);    // 11 nose bridge
-      d = smin(d, sph(x, y, z, 0, -0.2, 0.455, 0.05), 0.04);                    // 12 nose tip
-      d = smin(d, sph(ax, y, z, 0.05, -0.22, 0.4, 0.038), 0.03);                // 13 nostril wings
-      d = smax(d, -sph(ax, y, z, 0.03, -0.25, 0.43, 0.014), 0.01);              // 14 nostrils
-      d = smax(d, -cap(x, y, z, 0, -0.23, 0.41, 0, -0.3, 0.41, 0.012), 0.02);   // 15 philtrum
-      d = smin(d, ell(x, y, z, 0, -0.318, 0.37, 0.1, 0.026, 0.05), 0.025);      // 16 upper lip
-      d = smin(d, ell(x, y, z, 0, -0.37, 0.365, 0.09, 0.03, 0.05), 0.025);      // 17 lower lip
-      d = smax(d, -ell(x, y, z, 0, -0.344, 0.41, 0.12, 0.005, 0.06), 0.006);    // 18 mouth line
-      d = smax(d, -ell(x, y, z, 0, -0.405, 0.38, 0.06, 0.012, 0.04), 0.02);     // 19 chin crease
-      return d;
-    };
-    const nrm = (x, y, z) => {   // central differences, h = 0.002
-      const h = 0.002;
-      const nx = sdf(x + h, y, z) - sdf(x - h, y, z), ny = sdf(x, y + h, z) - sdf(x, y - h, z), nz = sdf(x, y, z + h) - sdf(x, y, z - h);
-      const l = len(nx, ny, nz) || 1; return [nx / l, ny / l, nz / l];
-    };
-    const L = [-0.55, 0.42, 0.72], Ll = len(...L); L[0] /= Ll; L[1] /= Ll; L[2] /= Ll;   // key light, upper-left-front
-    for (let j = 0; j < hh; j++) {
-      const y = (0.5 - (j + 0.5) / hh) * A;
-      for (let i = 0; i < ww; i++) {
-        const x = (i + 0.5) / ww - 0.5;
-        if (x * x / 0.17 + (y - 0.05) * (y - 0.05) / 0.38 > 1) continue;   // outside the head ellipse: speed-up only
-        // Orthographic ray down -z from z = 0.7.
-        let z = 0.7, hit = false;
-        for (let k = 0; k < 60; k++) { const d = sdf(x, y, z); if (d < 0.0015) { hit = true; break; } z -= Math.max(d, 0.002); if (z < -0.6) break; }
-        if (!hit || y < -0.53) continue;
-        const [nx, ny, nz] = nrm(x, y, z);
-        let ao = 0; for (let s = 1; s <= 4; s++) { const h = 0.03 * s; ao += (h - sdf(x + nx * h, y + ny * h, z + nz * h)) / Math.pow(2, s); }
-        ao = Math.max(0, Math.min(1, 1 - ao * 6));
-        const dif = Math.max(0, nx * L[0] + ny * L[1] + nz * L[2]);
-        const rz = 2 * dif * nz - L[2];                         // z of the reflected light vector
-        const sp = Math.pow(Math.max(0, rz), 30) * 0.18;        // specular
-        const rim = Math.pow(1 - Math.max(0, nz), 3) * 0.12;    // rim light
-        const fade = Math.max(0, Math.min(1, (y + 0.53) / 0.04));   // floating head: fade out under the chin, no neck
-        const lit = (0.06 + 1.05 * Math.pow(dif, 0.8) + sp + rim) * (0.25 + 0.75 * ao);
-        g[j * ww + i] = Math.max(0, Math.min(1, lit * fade));
-      }
+  // ---- 1. Source image -> luminance grid (ww = cols*3, hh = rows*4 px), built once per size in a canvas ----
+  // Exactly the reference sample(): draw the crop scaled into the canvas, luminance 0.3R+0.59G+0.11B, flood-fill the
+  // white background from every border pixel (4-connected, L >= 0.965) to black, cut the neck along the jawline curve
+  // (3 px fade), and stretch contrast with (L - 0.1) / 0.6.
+  function buildGrid(img, W, H) {
+    const ww = W * 3, hh = H * 4;
+    const cv = document.createElement('canvas'); cv.width = ww; cv.height = hh;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    const C = CROP; cx.drawImage(img, C[0], C[1], C[2], C[3], 0, 0, ww, hh);
+    const d = cx.getImageData(0, 0, ww, hh).data;
+    const n = ww * hh, g = new Float32Array(n);
+    for (let i = 0; i < n; i++) g[i] = (d[i * 4] * 0.3 + d[i * 4 + 1] * 0.59 + d[i * 4 + 2] * 0.11) / 255;
+    const bg = new Uint8Array(n), st = [];
+    for (let x = 0; x < ww; x++) st.push(x, (hh - 1) * ww + x);
+    for (let y = 0; y < hh; y++) st.push(y * ww, y * ww + ww - 1);
+    while (st.length) {
+      const i = st.pop(); if (bg[i] || g[i] < 0.965) continue;
+      bg[i] = 1; const x = i % ww, y = (i / ww) | 0;
+      if (x > 0) st.push(i - 1); if (x < ww - 1) st.push(i + 1);
+      if (y > 0) st.push(i - ww); if (y < hh - 1) st.push(i + ww);
+    }
+    for (let i = 0; i < n; i++) {
+      const ix = C[0] + ((i % ww) + 0.5) / ww * C[2], iy = C[1] + (((i / ww) | 0) + 0.5) / hh * C[3];
+      // Cut along the jawline so only the head floats (no neck).
+      const jawY = Math.max(146, 191 - 46 * ((ix - 196) / 60) ** 2);
+      const m = Math.max(0, Math.min(1, (jawY + 1 - iy) / 3));
+      g[i] = bg[i] ? 0 : m * Math.max(0, Math.min(1, (g[i] - 0.1) / 0.6));
     }
     return { g, ww, hh };
   }
@@ -226,6 +187,15 @@
       this.speed = opts.speed ?? 1;
       this.ramp = RAMPS[opts.style ?? 'ascii'];
       this.reserve = opts.reserve ?? 340;
+      this.src = opts.src ?? 'assets/face-ref2.png';
+      this.img = null;
+      // Resolves once the source image has loaded; nothing is drawn before that (as in the reference).
+      this.ready = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => { this.img = img; this.grid = null; resolve(this); };
+        img.onerror = reject;
+        img.src = this.src;
+      });
       this.rows = Math.round(this.cols * A * 0.6);   // cols = 90 -> rows = 66
       this.speech = buildSpeech();
       this.grid = null;
@@ -235,7 +205,7 @@
       this.p = { mouthOpen: 0, wide: 0, brow: 0, blink: 0 };   // last frame's expression (read by the tests)
       this._fs = null;
     }
-    _grid() { return this.grid || (this.grid = buildGrid(this.cols, this.rows)); }
+    _grid() { return this.grid || (this.grid = buildGrid(this.img, this.cols, this.rows)); }
     // Golden-frame render, exactly as the handoff fixtures were made: full talking loop, speech time = t * speed,
     // energy reset to 0 before the frame.
     renderAt(t) {
@@ -253,6 +223,7 @@
       if (this._fs !== fs) { this.el.style.fontSize = fs + 'px'; this._fs = fs; }
     }
     draw(t, dt) {
+      if (!this.img) return;
       const sp = this.speech;
       let open = 0, wide = 0, brow = 0, blink;
       if (this.mode === 'talking') {
@@ -285,5 +256,4 @@
 
   HollowFace.RAMPS = RAMPS;
   root.HollowFace = HollowFace;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { HollowFace, buildSpeech, viseme };
 })(typeof self !== 'undefined' ? self : globalThis);
